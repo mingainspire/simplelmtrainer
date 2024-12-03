@@ -89,7 +89,7 @@
         <div id="conversation" class="flex-grow e-ink p-4 overflow-y-auto mb-4"></div>
         <div class="flex">
             <input id="messageInput" type="text" class="flex-1 rounded-md p-2" placeholder="Type your message...">
-            <button id="sendButton" class="ml-2 bg-white text-black px-4 py-2 rounded-md">Send</button>
+            <button id="talkButton" class="ml-2 bg-white text-black px-4 py-2 rounded-md">Talk</button>
         </div>
     </div>
 
@@ -120,6 +120,10 @@
             <button id="decreaseTextSize" class="px-4 py-2 rounded-md">-</button>
             <button id="increaseTextSize" class="px-4 py-2 rounded-md">+</button>
         </div>
+        <div class="mt-4">
+            <label class="block">AI Speech</label>
+            <button id="toggleSpeech" class="w-full px-4 py-2 rounded-md">Disable Speech</button>
+        </div>
         <button id="saveSettings" class="mt-4 px-4 py-2 rounded-md">Save</button>
         <div class="mt-4 text-center">
             <p>Created by <a href="https://Ai-Nspired.com" target="_blank">Ai-N</a></p>
@@ -128,7 +132,7 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/2.0.0/marked.min.js"></script>
     <script>
-        const sendButton = document.getElementById('sendButton');
+        const talkButton = document.getElementById('talkButton');
         const messageInput = document.getElementById('messageInput');
         const conversation = document.getElementById('conversation');
         const powerButton = document.getElementById('powerButton');
@@ -137,12 +141,40 @@
         const saveSettings = document.getElementById('saveSettings');
         const decreaseTextSize = document.getElementById('decreaseTextSize');
         const increaseTextSize = document.getElementById('increaseTextSize');
+        const toggleSpeech = document.getElementById('toggleSpeech');
 
         let baseUrl = '';
         let apiKey = '';
         let preferredModel = '';
         let systemPrompt = '';
         let textSize = 16;
+        let recognizing = false;
+        let recognition;
+        let speechEnabled = true;
+
+        if ('webkitSpeechRecognition' in window) {
+            recognition = new webkitSpeechRecognition();
+            recognition.continuous = false;
+            recognition.interimResults = false;
+
+            recognition.onstart = function() {
+                recognizing = true;
+                talkButton.textContent = 'Stop';
+            };
+
+            recognition.onend = function() {
+                recognizing = false;
+                talkButton.textContent = 'Talk';
+            };
+
+            recognition.onresult = function(event) {
+                const transcript = event.results[0][0].transcript;
+                messageInput.value = transcript;
+                addMessage();
+            };
+        } else {
+            alert('Speech recognition not supported in this browser.');
+        }
 
         powerButton.addEventListener('click', () => {
             applet.classList.toggle('open');
@@ -155,8 +187,8 @@
                 toggleMode.innerHTML = '<i class="fas fa-sun"></i>';
                 powerButton.classList.add('bg-black');
                 powerButton.classList.remove('bg-white');
-                sendButton.classList.add('bg-black', 'text-white');
-                sendButton.classList.remove('bg-white', 'text-black');
+                talkButton.classList.add('bg-black', 'text-white');
+                talkButton.classList.remove('bg-white', 'text-black');
                 messageInput.classList.add('bg-white', 'text-black');
                 messageInput.classList.remove('bg-black', 'text-white');
                 document.querySelectorAll('.menu input, .menu textarea').forEach(element => {
@@ -169,8 +201,8 @@
                 toggleMode.innerHTML = '<i class="fas fa-moon"></i>';
                 powerButton.classList.add('bg-white');
                 powerButton.classList.remove('bg-black');
-                sendButton.classList.add('bg-white', 'text-black');
-                sendButton.classList.remove('bg-black', 'text-white');
+                talkButton.classList.add('bg-white', 'text-black');
+                talkButton.classList.remove('bg-black', 'text-white');
                 messageInput.classList.add('bg-black', 'text-white');
                 messageInput.classList.remove('bg-white', 'text-black');
                 document.querySelectorAll('.menu input, .menu textarea').forEach(element => {
@@ -178,6 +210,11 @@
                     element.classList.remove('bg-white', 'text-black');
                 });
             }
+        });
+
+        toggleSpeech.addEventListener('click', () => {
+            speechEnabled = !speechEnabled;
+            toggleSpeech.textContent = speechEnabled ? 'Disable Speech' : 'Enable Speech';
         });
 
         // Input Validation
@@ -265,10 +302,17 @@
                     }
 
                     const data = await response.json();
+                    const aiMessageContent = data.choices[0].message.content.trim();
                     const aiMessageElement = document.createElement('div');
-                    aiMessageElement.innerHTML = marked(data.choices[0].message.content.trim());
+                    aiMessageElement.innerHTML = marked(aiMessageContent);
                     conversation.appendChild(aiMessageElement);
                     conversation.scrollTop = conversation.scrollHeight;
+
+                    // AI Speech Synthesis
+                    if (speechEnabled) {
+                        const utterance = new SpeechSynthesisUtterance(aiMessageContent);
+                        speechSynthesis.speak(utterance);
+                    }
                 } catch (error) {
                     console.error('Error:', error);
                     const errorMessageElement = document.createElement('p');
@@ -283,12 +327,11 @@
             }
         }
 
-        sendButton.addEventListener('click', addMessage);
-
-        messageInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                addMessage();
+        talkButton.addEventListener('click', () => {
+            if (recognizing) {
+                recognition.stop();
+            } else {
+                recognition.start();
             }
         });
 
