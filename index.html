@@ -131,219 +131,238 @@
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/2.0.0/marked.min.js"></script>
-    <script>
-        const talkButton = document.getElementById('talkButton');
-        const messageInput = document.getElementById('messageInput');
-        const conversation = document.getElementById('conversation');
-        const powerButton = document.getElementById('powerButton');
-        const applet = document.getElementById('applet');
-        const toggleMode = document.getElementById('toggleMode');
-        const saveSettings = document.getElementById('saveSettings');
-        const decreaseTextSize = document.getElementById('decreaseTextSize');
-        const increaseTextSize = document.getElementById('increaseTextSize');
-        const toggleSpeech = document.getElementById('toggleSpeech');
+   <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/2.0.0/marked.min.js"></script>
+<script>
+    const talkButton = document.getElementById('talkButton');
+    const messageInput = document.getElementById('messageInput');
+    const conversation = document.getElementById('conversation');
+    const powerButton = document.getElementById('powerButton');
+    const applet = document.getElementById('applet');
+    const toggleMode = document.getElementById('toggleMode');
+    const saveSettings = document.getElementById('saveSettings');
+    const decreaseTextSize = document.getElementById('decreaseTextSize');
+    const increaseTextSize = document.getElementById('increaseTextSize');
+    const toggleSpeech = document.getElementById('toggleSpeech');
 
-        let baseUrl = '';
-        let apiKey = '';
-        let preferredModel = '';
-        let systemPrompt = '';
-        let textSize = 16;
-        let recognizing = false;
-        let recognition;
-        let speechEnabled = true;
+    let baseUrl = '';
+    let apiKey = '';
+    let preferredModel = '';
+    let systemPrompt = '';
+    let textSize = 16;
+    let recognizing = false;
+    let recognition;
+    let speechEnabled = true;
 
-        if ('webkitSpeechRecognition' in window) {
-            recognition = new webkitSpeechRecognition();
-            recognition.continuous = false;
-            recognition.interimResults = false;
+    if ('webkitSpeechRecognition' in window) {
+        recognition = new webkitSpeechRecognition();
+        recognition.continuous = false;
+        recognition.interimResults = false;
 
-            recognition.onstart = function() {
-                recognizing = true;
-                talkButton.textContent = 'Stop';
-            };
-
-            recognition.onend = function() {
-                recognizing = false;
-                talkButton.textContent = 'Talk';
-            };
-
-            recognition.onresult = function(event) {
-                const transcript = event.results[0][0].transcript;
-                messageInput.value = transcript;
-                addMessage();
-            };
-        } else {
-            alert('Speech recognition not supported in this browser.');
-        }
-
-        powerButton.addEventListener('click', () => {
-            applet.classList.toggle('open');
-        });
-
-        toggleMode.addEventListener('click', () => {
-            if (document.body.classList.contains('dark-mode')) {
-                document.body.classList.remove('dark-mode');
-                document.body.classList.add('light-mode');
-                toggleMode.innerHTML = '<i class="fas fa-sun"></i>';
-                powerButton.classList.add('bg-black');
-                powerButton.classList.remove('bg-white');
-                talkButton.classList.add('bg-black', 'text-white');
-                talkButton.classList.remove('bg-white', 'text-black');
-                messageInput.classList.add('bg-white', 'text-black');
-                messageInput.classList.remove('bg-black', 'text-white');
-                document.querySelectorAll('.menu input, .menu textarea').forEach(element => {
-                    element.classList.add('bg-white', 'text-black');
-                    element.classList.remove('bg-black', 'text-white');
-                });
-            } else {
-                document.body.classList.remove('light-mode');
-                document.body.classList.add('dark-mode');
-                toggleMode.innerHTML = '<i class="fas fa-moon"></i>';
-                powerButton.classList.add('bg-white');
-                powerButton.classList.remove('bg-black');
-                talkButton.classList.add('bg-white', 'text-black');
-                talkButton.classList.remove('bg-black', 'text-white');
-                messageInput.classList.add('bg-black', 'text-white');
-                messageInput.classList.remove('bg-white', 'text-black');
-                document.querySelectorAll('.menu input, .menu textarea').forEach(element => {
-                    element.classList.add('bg-black', 'text-white');
-                    element.classList.remove('bg-white', 'text-black');
-                });
-            }
-        });
-
-        toggleSpeech.addEventListener('click', () => {
-            speechEnabled = !speechEnabled;
-            toggleSpeech.textContent = speechEnabled ? 'Disable Speech' : 'Enable Speech';
-        });
-
-        // Input Validation
-        function isValidUrl(url) {
-            const pattern = new RegExp('^(https?:\\/\\/)?'+ // protocol
-                '((([a-z0-9](?:[a-z0-9-]*[a-z0-9])?)\\.)+[a-z]{2,}|'+ // domain name
-                'localhost|'+ // localhost
-                '\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}|'+ // IP address
-                '\\[?[a-f0-9]*:[a-f0-9:%.]*\\]?)'+ // IPv6
-                '(\\:\\d+)?(\\/[-a-z0-9%_.~+]*)*'+ // port and path
-                '(\\?[;&a-z0-9%_.~+=-]*)?'+ // query string
-                '(\\#[-a-z0-9_]*)?$','i'); // fragment locator
-            return !!pattern.test(url);
-        }
-
-        saveSettings.addEventListener('click', () => {
-            const newBaseUrl = document.getElementById('baseUrl').value;
-            if (!isValidUrl(newBaseUrl)) {
-                alert("Please enter a valid URL.");
-                return;
-            }
-            baseUrl = newBaseUrl;
-            apiKey = document.getElementById('apiKey').value;
-            preferredModel = document.getElementById('preferredModel').value;
-            systemPrompt = document.getElementById('systemPrompt').value;
-
-            // Save to localStorage
-            localStorage.setItem('baseUrl', baseUrl);
-            localStorage.setItem('apiKey', apiKey);
-            localStorage.setItem('preferredModel', preferredModel);
-            localStorage.setItem('systemPrompt', systemPrompt);
-
-            applet.classList.remove('open');
-        });
-
-        // Load settings from localStorage on page load
-        window.onload = () => {
-            baseUrl = localStorage.getItem('baseUrl') || '';
-            apiKey = localStorage.getItem('apiKey') || '';
-            preferredModel = localStorage.getItem('preferredModel') || '';
-            systemPrompt = localStorage.getItem('systemPrompt') || '';
-
-            document.getElementById('baseUrl').value = baseUrl;
-            document.getElementById('apiKey').value = apiKey;
-            document.getElementById('preferredModel').value = preferredModel;
-            document.getElementById('systemPrompt').value = systemPrompt;
+        recognition.onstart = function() {
+            recognizing = true;
+            talkButton.textContent = 'Stop';
         };
 
-        async function addMessage() {
-            const message = messageInput.value.trim();
-            if (message) {
-                const messageElement = document.createElement('p');
-                messageElement.textContent = message;
-                conversation.appendChild(messageElement);
-                messageInput.value = '';
-                conversation.scrollTop = conversation.scrollHeight;
+        recognition.onend = function() {
+            recognizing = false;
+            talkButton.textContent = 'Talk';
+        };
 
-                // Show thinking dots
-                const thinkingElement = document.createElement('p');
-                thinkingElement.textContent = '...';
-                conversation.appendChild(thinkingElement);
-                conversation.scrollTop = conversation.scrollHeight;
+        recognition.onresult = function(event) {
+            const transcript = event.results[0][0].transcript;
+            messageInput.value = transcript;
+            addMessage();
+        };
+    } else {
+        alert('Speech recognition not supported in this browser.');
+    }
 
-                // Add pulsate effect to power button
-                powerButton.classList.add('pulsate');
+    powerButton.addEventListener('click', () => {
+        applet.classList.toggle('open');
+    });
 
-                try {
-                    const response = await fetch(`${baseUrl}/chat/completions`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${apiKey}`
-                        },
-                        body: JSON.stringify({
-                            model: preferredModel,
-                            messages: [
-                                { role: "system", content: systemPrompt },
-                                { role: "user", content: message }
-                            ]
-                        })
-                    });
+    toggleMode.addEventListener('click', () => {
+        if (document.body.classList.contains('dark-mode')) {
+            document.body.classList.remove('dark-mode');
+            document.body.classList.add('light-mode');
+            toggleMode.innerHTML = '<i class="fas fa-sun"></i>';
+            powerButton.classList.add('bg-black');
+            powerButton.classList.remove('bg-white');
+            talkButton.classList.add('bg-black', 'text-white');
+            talkButton.classList.remove('bg-white', 'text-black');
+            messageInput.classList.add('bg-white', 'text-black');
+            messageInput.classList.remove('bg-black', 'text-white');
+            document.querySelectorAll('.menu input, .menu textarea').forEach(element => {
+                element.classList.add('bg-white', 'text-black');
+                element.classList.remove('bg-black', 'text-white');
+            });
+        } else {
+            document.body.classList.remove('light-mode');
+            document.body.classList.add('dark-mode');
+            toggleMode.innerHTML = '<i class="fas fa-moon"></i>';
+            powerButton.classList.add('bg-white');
+            powerButton.classList.remove('bg-black');
+            talkButton.classList.add('bg-white', 'text-black');
+            talkButton.classList.remove('bg-black', 'text-white');
+            messageInput.classList.add('bg-black', 'text-white');
+            messageInput.classList.remove('bg-white', 'text-black');
+            document.querySelectorAll('.menu input, .menu textarea').forEach(element => {
+                element.classList.add('bg-black', 'text-white');
+                element.classList.remove('bg-white', 'text-black');
+            });
+        }
+    });
 
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
+    toggleSpeech.addEventListener('click', () => {
+        speechEnabled = !speechEnabled;
+        toggleSpeech.textContent = speechEnabled ? 'Disable Speech' : 'Enable Speech';
+        if (!speechEnabled) {
+            talkButton.textContent = 'Send';
+        } else {
+            talkButton.textContent = recognizing ? 'Stop' : 'Talk';
+        }
+    });
 
-                    const data = await response.json();
-                    const aiMessageContent = data.choices[0].message.content.trim();
-                    const aiMessageElement = document.createElement('div');
-                    aiMessageElement.innerHTML = marked(aiMessageContent);
-                    conversation.appendChild(aiMessageElement);
-                    conversation.scrollTop = conversation.scrollHeight;
+    // Input Validation
+    function isValidUrl(url) {
+        const pattern = new RegExp('^(https?:\\/\\/)?'+ // protocol
+            '((([a-z0-9](?:[a-z0-9-]*[a-z0-9])?)\\.)+[a-z]{2,}|'+ // domain name
+            'localhost|'+ // localhost
+            '\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}|'+ // IP address
+            '\\[?[a-f0-9]*:[a-f0-9:%.]*\\]?)'+ // IPv6
+            '(\\:\\d+)?(\\/[-a-z0-9%_.~+]*)*'+ // port and path
+            '(\\?[;&a-z0-9%_.~+=-]*)?'+ // query string
+            '(\\#[-a-z0-9_]*)?$','i'); // fragment locator
+        return !!pattern.test(url);
+    }
 
-                    // AI Speech Synthesis
-                    if (speechEnabled) {
-                        const utterance = new SpeechSynthesisUtterance(aiMessageContent);
-                        speechSynthesis.speak(utterance);
-                    }
-                } catch (error) {
-                    console.error('Error:', error);
-                    const errorMessageElement = document.createElement('p');
-                    errorMessageElement.textContent = `Error: ${error.message}`;
-                    conversation.appendChild(errorMessageElement);
-                    conversation.scrollTop = conversation.scrollHeight;
-                } finally {
-                    // Remove thinking dots and pulsate effect
-                    conversation.removeChild(thinkingElement);
-                    powerButton.classList.remove('pulsate');
+    saveSettings.addEventListener('click', () => {
+        const newBaseUrl = document.getElementById('baseUrl').value;
+        if (!isValidUrl(newBaseUrl)) {
+            alert("Please enter a valid URL.");
+            return;
+        }
+        baseUrl = newBaseUrl;
+        apiKey = document.getElementById('apiKey').value;
+        preferredModel = document.getElementById('preferredModel').value;
+        systemPrompt = document.getElementById('systemPrompt').value;
+
+        // Save to localStorage
+        localStorage.setItem('baseUrl', baseUrl);
+        localStorage.setItem('apiKey', apiKey);
+        localStorage.setItem('preferredModel', preferredModel);
+        localStorage.setItem('systemPrompt', systemPrompt);
+
+        applet.classList.remove('open');
+    });
+
+    // Load settings from localStorage on page load
+    window.onload = () => {
+        baseUrl = localStorage.getItem('baseUrl') || '';
+        apiKey = localStorage.getItem('apiKey') || '';
+        preferredModel = localStorage.getItem('preferredModel') || '';
+        systemPrompt = localStorage.getItem('systemPrompt') || '';
+
+        document.getElementById('baseUrl').value = baseUrl;
+        document.getElementById('apiKey').value = apiKey;
+        document.getElementById('preferredModel').value = preferredModel;
+        document.getElementById('systemPrompt').value = systemPrompt;
+    };
+
+    async function addMessage() {
+        const message = messageInput.value.trim();
+        if (message) {
+            const messageElement = document.createElement('p');
+            messageElement.textContent = message;
+            conversation.appendChild(messageElement);
+            messageInput.value = '';
+            conversation.scrollTop = conversation.scrollHeight;
+
+            // Show thinking dots
+            const thinkingElement = document.createElement('p');
+            thinkingElement.textContent = '...';
+            conversation.appendChild(thinkingElement);
+            conversation.scrollTop = conversation.scrollHeight;
+
+            // Add pulsate effect to power button
+            powerButton.classList.add('pulsate');
+
+            try {
+                const response = await fetch(`${baseUrl}/chat/completions`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${apiKey}`
+                    },
+                    body: JSON.stringify({
+                        model: preferredModel,
+                        messages: [
+                            { role: "system", content: systemPrompt },
+                            { role: "user", content: message }
+                        ]
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
                 }
+
+                const data = await response.json();
+                const aiMessageContent = data.choices[0].message.content.trim();
+                const aiMessageElement = document.createElement('div');
+                aiMessageElement.innerHTML = marked(aiMessageContent);
+                conversation.appendChild(aiMessageElement);
+                conversation.scrollTop = conversation.scrollHeight;
+
+                // AI Speech Synthesis
+                if (speechEnabled) {
+                    const utterance = new SpeechSynthesisUtterance(aiMessageContent);
+                    speechSynthesis.speak(utterance);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                const errorMessageElement = document.createElement('p');
+                errorMessageElement.textContent = `Error: ${error.message}`;
+                conversation.appendChild(errorMessageElement);
+                conversation.scrollTop = conversation.scrollHeight;
+            } finally {
+                // Remove thinking dots and pulsate effect
+                conversation.removeChild(thinkingElement);
+                powerButton.classList.remove('pulsate');
             }
         }
+    }
 
-        talkButton.addEventListener('click', () => {
+    talkButton.addEventListener('click', () => {
+        if (!speechEnabled) {
+            addMessage();
+        } else {
             if (recognizing) {
                 recognition.stop();
             } else {
                 recognition.start();
             }
-        });
+        }
+    });
 
-        decreaseTextSize.addEventListener('click', () => {
-            textSize = Math.max(12, textSize - 2);
-            conversation.style.fontSize = `${textSize}px`;
-        });
+    messageInput.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' && !event.shiftKey) {
+            event.preventDefault();
+            if (!speechEnabled) {
+                addMessage();
+            }
+        }
+    });
 
-        increaseTextSize.addEventListener('click', () => {
-            textSize = Math.min(24, textSize + 2);
-            conversation.style.fontSize = `${textSize}px`;
-        });
-    </script>
+    decreaseTextSize.addEventListener('click', () => {
+        textSize = Math.max(12, textSize - 2);
+        conversation.style.fontSize = `${textSize}px`;
+    });
+
+    increaseTextSize.addEventListener('click', () => {
+        textSize = Math.min(24, textSize + 2);
+        conversation.style.fontSize = `${textSize}px`;
+    });
+</script>
 </body>
 </html>
