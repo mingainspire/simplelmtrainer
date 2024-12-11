@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LLM Test Shell</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            max-width: 800px;
+            margin: auto;
+        }
+        .response-area {
+            background-color: #fff;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            padding: 10px;
+            margin-top: 10px;
+            height: 300px;
+            overflow-y: auto;
+        }
+        input, button {
+            margin: 5px 0;
+            padding: 10px;
+            width: 100%;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>LLM Test Shell</h1>
+        <h2>LLM 1 Configuration</h2>
+        <input id="baseUrl1" type="text" placeholder="Base URL for LLM 1">
+        <input id="apiKey1" type="text" placeholder="API Key for LLM 1">
+        <input id="modelNumber1" type="text" placeholder="Model Number for LLM 1">
+        
+        <h2>LLM 2 Configuration</h2>
+        <input id="baseUrl2" type="text" placeholder="Base URL for LLM 2">
+        <input id="apiKey2" type="text" placeholder="API Key for LLM 2">
+        <input id="modelNumber2" type="text" placeholder="Model Number for LLM 2">
+
+        <h2>Message</h2>
+        <input id="userInput" type="text" placeholder="Write your message...">
+        <button id="sendButton1">Send to LLM 1</button>
+        <button id="sendButton2">Send to LLM 2</button>
+        <button id="saveButton">Save Configurations</button>
+
+        <h2>Responses</h2>
+        <div class="response-area" id="responseArea"></div>
+    </div>
+
+    <script>
+        const sendButton1 = document.getElementById('sendButton1');
+        const sendButton2 = document.getElementById('sendButton2');
+        const saveButton = document.getElementById('saveButton');
+        const userInput = document.getElementById('userInput');
+        const responseArea = document.getElementById('responseArea');
+
+        // Load configurations from local storage
+        function loadConfigurations() {
+            const config1 = JSON.parse(localStorage.getItem('llm1'));
+            const config2 = JSON.parse(localStorage.getItem('llm2'));
+            if (config1) {
+                document.getElementById('baseUrl1').value = config1.baseUrl;
+                document.getElementById('apiKey1').value = config1.apiKey;
+                document.getElementById('modelNumber1').value = config1.modelNumber;
+            }
+            if (config2) {
+                document.getElementById('baseUrl2').value = config2.baseUrl;
+                document.getElementById('apiKey2').value = config2.apiKey;
+                document.getElementById('modelNumber2').value = config2.modelNumber;
+            }
+        }
+
+        // Save configurations to local storage
+        function saveConfigurations() {
+            const config1 = {
+                baseUrl: document.getElementById('baseUrl1').value,
+                apiKey: document.getElementById('apiKey1').value,
+                modelNumber: document.getElementById('modelNumber1').value
+            };
+            const config2 = {
+                baseUrl: document.getElementById('baseUrl2').value,
+                apiKey: document.getElementById('apiKey2').value,
+                                modelNumber: document.getElementById('modelNumber2').value
+            };
+
+            localStorage.setItem('llm1', JSON.stringify(config1));
+            localStorage.setItem('llm2', JSON.stringify(config2));
+            alert("Configurations saved successfully!");
+        }
+
+        async function fetchLLMResponse(baseUrl, apiKey, modelNumber, prompt) {
+            try {
+                const response = await fetch(`${baseUrl}/chat/completions`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${apiKey}`
+                    },
+                    body: JSON.stringify({
+                        model: modelNumber,
+                        messages: [{ role: "user", content: prompt }]
+                    })
+                });
+                const data = await response.json();
+                return data.choices[0].message.content.trim();
+            } catch (error) {
+                console.error("Error fetching LLM response:", error);
+                return "Error fetching response from LLM.";
+            }
+        }
+
+        sendButton1.addEventListener('click', async () => {
+            const message = userInput.value;
+            if (message.trim() !== '') {
+                const baseUrl = document.getElementById('baseUrl1').value;
+                const apiKey = document.getElementById('apiKey1').value;
+                const modelNumber = document.getElementById('modelNumber1').value;
+
+                const response = await fetchLLMResponse(baseUrl, apiKey, modelNumber, message);
+                responseArea.innerHTML += `<strong>LLM 1:</strong> ${response}<br>`;
+                userInput.value = ''; // Clear input
+            }
+        });
+
+        sendButton2.addEventListener('click', async () => {
+            const message = userInput.value;
+            if (message.trim() !== '') {
+                const baseUrl = document.getElementById('baseUrl2').value;
+                const apiKey = document.getElementById('apiKey2').value;
+                const modelNumber = document.getElementById('modelNumber2').value;
+
+                const response = await fetchLLMResponse(baseUrl, apiKey, modelNumber, message);
+                responseArea.innerHTML += `<strong>LLM 2:</strong> ${response}<br>`;
+                userInput.value = ''; // Clear input
+            }
+        });
+
+        // Load configurations when the page loads
+        window.onload = loadConfigurations;
+
+        // Save configurations when the save button is clicked
+        saveButton.addEventListener('click', saveConfigurations);
+    </script>
+</body>
+</html>
